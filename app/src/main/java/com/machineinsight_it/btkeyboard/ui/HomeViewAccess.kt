@@ -1,0 +1,3 @@
+package com.machineinsight_it.btkeyboard.ui
+
+interface HomeViewAccess

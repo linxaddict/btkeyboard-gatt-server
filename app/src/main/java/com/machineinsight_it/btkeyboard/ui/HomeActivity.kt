@@ -1,4 +1,4 @@
-package com.machineinsight_it.btkeyboard
+package com.machineinsight_it.btkeyboard.ui
 
 import android.app.Activity
 import android.bluetooth.*
@@ -18,13 +18,14 @@ import android.util.Log
 import com.google.android.things.pio.Gpio
 import com.google.android.things.pio.GpioCallback
 import com.google.android.things.pio.PeripheralManagerService
+import com.machineinsight_it.btkeyboard.R
 import com.machineinsight_it.btkeyboard.ble.CONTROLLER_SERVICE
 import com.machineinsight_it.btkeyboard.ble.CURRENT_STATE
 import com.machineinsight_it.btkeyboard.ble.MediaControllerProfile
 import java.io.IOException
 
 
-class HomeActivity : Activity() {
+class HomeActivity : Activity(), HomeViewAccess {
     // http://nilhcem.com/android-things/bluetooth-low-energy
 
     lateinit var bluetoothManager: BluetoothManager

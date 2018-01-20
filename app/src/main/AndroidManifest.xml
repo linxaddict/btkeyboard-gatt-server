@@ -9,7 +9,7 @@
     <application android:name=".BtKeyboardApplication">
         <uses-library android:name="com.google.android.things" />
 
-        <activity android:name="com.machineinsight_it.btkeyboard.HomeActivity">
+        <activity android:name="com.machineinsight_it.btkeyboard.ui.HomeActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

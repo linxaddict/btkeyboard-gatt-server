@@ -33,8 +33,15 @@ android {
 dependencies {
     implementation support.constraintLayout
     implementation jetbrains.kotlin
+    implementation google.dagger
+    implementation google.daggerAndroidSupport
 
     compileOnly google.androidThings
+    compileOnly javax.jsr250
+
+    kapt dataBinding.compiler
+    kapt google.daggerCompiler
+    kapt google.daggerProcessor
 
     testImplementation test.junit
 }
