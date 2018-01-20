@@ -1,8 +1,17 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
 
 android {
+    dataBinding {
+        enabled true
+    }
+
+    androidExtensions {
+        experimental true
+    }
+
     compileSdkVersion 27
     defaultConfig {
         applicationId "com.machineinsight_it.btkeyboard"
@@ -12,6 +21,7 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -21,10 +31,10 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
-    testImplementation 'junit:junit:4.12'
-    compileOnly 'com.google.android.things:androidthings:0.6.1-devpreview'
-    implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:1.2.20"
-    implementation 'com.google.android.things.contrib:driver-button:0.3'
+    implementation support.constraintLayout
+    implementation jetbrains.kotlin
+
+    compileOnly google.androidThings
+
+    testImplementation test.junit
 }
