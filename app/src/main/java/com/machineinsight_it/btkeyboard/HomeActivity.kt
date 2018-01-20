@@ -18,9 +18,9 @@ import android.util.Log
 import com.google.android.things.pio.Gpio
 import com.google.android.things.pio.GpioCallback
 import com.google.android.things.pio.PeripheralManagerService
-import com.machineinsight_it.btkeyboard.bt.CONTROLLER_SERVICE
-import com.machineinsight_it.btkeyboard.bt.CURRENT_STATE
-import com.machineinsight_it.btkeyboard.bt.MediaControllerProfile
+import com.machineinsight_it.btkeyboard.ble.CONTROLLER_SERVICE
+import com.machineinsight_it.btkeyboard.ble.CURRENT_STATE
+import com.machineinsight_it.btkeyboard.ble.MediaControllerProfile
 import java.io.IOException
 
 
