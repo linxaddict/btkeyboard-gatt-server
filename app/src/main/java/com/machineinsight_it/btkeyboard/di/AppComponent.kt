@@ -9,7 +9,7 @@ import javax.inject.Singleton
 
 @Singleton
 @Component(modules = [AndroidInjectionModule::class, AppModule::class, ActivityBuilder::class,
-    BtKeyboardServiceModule::class])
+    BluetoothModule::class])
 interface AppComponent {
     @Component.Builder
     interface Builder {

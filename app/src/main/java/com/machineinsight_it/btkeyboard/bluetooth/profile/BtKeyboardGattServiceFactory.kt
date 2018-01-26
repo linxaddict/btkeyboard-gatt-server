@@ -1,4 +1,4 @@
-package com.machineinsight_it.btkeyboard.ble
+package com.machineinsight_it.btkeyboard.bluetooth.profile
 
 import android.bluetooth.BluetoothGattService
 

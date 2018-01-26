@@ -19,26 +19,30 @@ import com.google.android.things.pio.Gpio
 import com.google.android.things.pio.GpioCallback
 import com.google.android.things.pio.PeripheralManagerService
 import com.machineinsight_it.btkeyboard.R
-import com.machineinsight_it.btkeyboard.ble.CONTROLLER_SERVICE
-import com.machineinsight_it.btkeyboard.ble.CURRENT_STATE
-import com.machineinsight_it.btkeyboard.ble.MediaControllerProfile
+import com.machineinsight_it.btkeyboard.bluetooth.profile.BtKeyboardServiceProfile
+import dagger.android.AndroidInjection
 import java.io.IOException
+import java.util.*
+import javax.inject.Inject
 
 
 class HomeActivity : Activity(), HomeViewAccess {
-    // http://nilhcem.com/android-things/bluetooth-low-energy
+    @Inject
+    lateinit var btKeyboardGattService: BluetoothGattService
 
     lateinit var bluetoothManager: BluetoothManager
-    var bluetoothGattServer: BluetoothGattServer? = null
-    var bluetoothLeAdvertiser: BluetoothLeAdvertiser? = null
-    /* Collection of notification subscribers */
-    val registeredDevices = hashSetOf<BluetoothDevice>()
 
     lateinit var gpio02: Gpio
 
-    /**
-     * Callback to receive information about the advertisement process.
-     */
+    var bluetoothGattServer: BluetoothGattServer? = null
+    var bluetoothLeAdvertiser: BluetoothLeAdvertiser? = null
+    val registeredDevices = hashSetOf<BluetoothDevice>()
+
+    var stateKey1 = BtKeyboardServiceProfile.stateReleased
+    var stateKey2 = BtKeyboardServiceProfile.stateReleased
+    var stateKey3 = BtKeyboardServiceProfile.stateReleased
+    var stateKey4 = BtKeyboardServiceProfile.stateReleased
+
     private val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
             Log.i(TAG, "LE Advertise Started.")
@@ -62,28 +66,22 @@ class HomeActivity : Activity(), HomeViewAccess {
                     stopServer()
                     stopAdvertising()
                 }
-            }// Do nothing
-
+            }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // https://stackoverflow.com/questions/24865120/any-way-to-implement-ble-notifications-in-android-l-preview/25508053#25508053
+        AndroidInjection.inject(this)
 
         setContentView(R.layout.activity_home)
 
         val manager = PeripheralManagerService()
         gpio02 = manager.openGpio("BCM4")
 
-        // Initialize the pin as an input
         gpio02.setDirection(Gpio.DIRECTION_IN)
-        // High voltage is considered active
         gpio02.setActiveType(Gpio.ACTIVE_HIGH)
-
-        System.out.println("current state: " + gpio02.value)
-
         gpio02.setEdgeTriggerType(Gpio.EDGE_BOTH)
         gpio02.registerGpioCallback(object : GpioCallback() {
             override fun onGpioEdge(gpio: Gpio?): Boolean {
@@ -97,18 +95,16 @@ class HomeActivity : Activity(), HomeViewAccess {
             }
         })
 
-        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val bluetoothAdapter = bluetoothManager.getAdapter()
-        // We can't continue without proper Bluetooth support
-        if (!checkBluetoothSupport(bluetoothAdapter)) {
+        if (!checkBluetoothSupport(bluetoothManager.adapter)) {
             finish()
         }
 
         val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
         registerReceiver(bluetoothReceiver, filter)
-        if (!bluetoothAdapter.isEnabled) {
+
+        if (!bluetoothManager.adapter.isEnabled) {
             Log.d(TAG, "Bluetooth is currently disabled...enabling")
-            bluetoothAdapter.enable()
+            bluetoothManager.adapter.enable()
         } else {
             Log.d(TAG, "Bluetooth enabled...starting services")
             startAdvertising()
@@ -128,7 +124,6 @@ class HomeActivity : Activity(), HomeViewAccess {
     }
 
     private fun checkBluetoothSupport(bluetoothAdapter: BluetoothAdapter?): Boolean {
-
         if (bluetoothAdapter == null) {
             Log.w("BtMediaController", "Bluetooth is not supported")
             return false
@@ -160,18 +155,13 @@ class HomeActivity : Activity(), HomeViewAccess {
         val data = AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
                 .setIncludeTxPowerLevel(false)
-                .addServiceUuid(ParcelUuid(CONTROLLER_SERVICE))
+                .addServiceUuid(ParcelUuid(BtKeyboardServiceProfile.controllerService))
                 .build()
 
         bluetoothLeAdvertiser?.startAdvertising(settings, data, advertiseCallback)
     }
 
-    /**
-     * Stop Bluetooth advertisements.
-     */
     private fun stopAdvertising() {
-        if (bluetoothLeAdvertiser == null) return
-
         bluetoothLeAdvertiser?.stopAdvertising(advertiseCallback)
     }
 
@@ -179,18 +169,12 @@ class HomeActivity : Activity(), HomeViewAccess {
         bluetoothGattServer = bluetoothManager.openGattServer(this, mGattServerCallback)
         if (bluetoothGattServer == null) {
             Log.w(TAG, "Unable to create GATT server")
-            return
         }
 
-        bluetoothGattServer?.addService(MediaControllerProfile.createService())
+        bluetoothGattServer?.addService(btKeyboardGattService)
     }
 
-    /**
-     * Shut down the GATT server.
-     */
     private fun stopServer() {
-        if (bluetoothGattServer == null) return
-
         bluetoothGattServer?.close()
     }
 
@@ -208,22 +192,56 @@ class HomeActivity : Activity(), HomeViewAccess {
 
         override fun onCharacteristicReadRequest(device: BluetoothDevice, requestId: Int, offset: Int,
                                                  characteristic: BluetoothGattCharacteristic) {
-            var response = ByteArray(8)
+            val response = when (characteristic.uuid) {
+                BtKeyboardServiceProfile.key1Characteristic -> stateKey1
+                BtKeyboardServiceProfile.key2Characteristic -> stateKey2
+                BtKeyboardServiceProfile.key3Characteristic -> stateKey3
+                BtKeyboardServiceProfile.key4Characteristic -> stateKey4
+                else -> { null }
+            }
 
-            if (CURRENT_STATE == characteristic.uuid) {
-                bluetoothGattServer?.sendResponse(device,
-                        requestId,
-                        BluetoothGatt.GATT_SUCCESS,
-                        0,
-                        response)
+            if (response == null) {
+                bluetoothGattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE,
+                        0, response)
             } else {
-                // Invalid characteristic
-                Log.w(TAG, "Invalid Characteristic Read: " + characteristic.uuid)
-                bluetoothGattServer?.sendResponse(device,
-                        requestId,
-                        BluetoothGatt.GATT_FAILURE,
-                        0,
-                        null)
+                bluetoothGattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS,
+                        0, response)
+            }
+        }
+
+        override fun onDescriptorReadRequest(device: BluetoothDevice?, requestId: Int, offset: Int, descriptor: BluetoothGattDescriptor?) {
+            if (BtKeyboardServiceProfile.clientConfig == descriptor?.uuid) {
+                val returnValue = if (registeredDevices.contains(device)) {
+                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                } else {
+                    BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
+                }
+
+                bluetoothGattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE,
+                        0, returnValue)
+            } else {
+                bluetoothGattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE,
+                        0, null)
+            }
+        }
+
+        override fun onDescriptorWriteRequest(device: BluetoothDevice?, requestId: Int, descriptor: BluetoothGattDescriptor?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
+            if (BtKeyboardServiceProfile.controllerService == descriptor?.uuid) {
+                if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, value)) {
+                    device?.let { registeredDevices.add(it) }
+                } else if (Arrays.equals(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE, value)) {
+                    registeredDevices.remove(device)
+                }
+
+                if (responseNeeded) {
+                    bluetoothGattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS,
+                            0, null)
+                }
+            } else {
+                if (responseNeeded) {
+                    bluetoothGattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE,
+                            0, null)
+                }
             }
         }
     }

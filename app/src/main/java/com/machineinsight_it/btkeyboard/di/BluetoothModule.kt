@@ -1,14 +1,14 @@
 package com.machineinsight_it.btkeyboard.di
 
 import android.bluetooth.BluetoothGattService
-import com.machineinsight_it.btkeyboard.ble.BtKeyboardGattServiceFactory
-import com.machineinsight_it.btkeyboard.ble.BtKeyboardGattServiceFactoryImpl
+import com.machineinsight_it.btkeyboard.bluetooth.profile.BtKeyboardGattServiceFactory
+import com.machineinsight_it.btkeyboard.bluetooth.profile.BtKeyboardGattServiceFactoryImpl
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
 
 @Module
-class BtKeyboardServiceModule {
+class BluetoothModule {
     @Provides
     @Singleton
     fun provideBtKeyboardGattServiceFactory(): BtKeyboardGattServiceFactory = BtKeyboardGattServiceFactoryImpl()

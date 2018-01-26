@@ -1,4 +1,4 @@
-package com.machineinsight_it.btkeyboard.ble
+package com.machineinsight_it.btkeyboard.bluetooth.profile
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
@@ -7,11 +7,13 @@ import java.util.*
 
 class BtKeyboardGattServiceFactoryImpl : BtKeyboardGattServiceFactory {
     private fun createCharacteristic(characteristicUuid: UUID, descriptorUuid: UUID): BluetoothGattCharacteristic {
+        val configDescriptor = BluetoothGattDescriptor(descriptorUuid,
+                BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE)
+
         val characteristic = BluetoothGattCharacteristic(characteristicUuid,
                 BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
                 BluetoothGattCharacteristic.PERMISSION_READ)
-        val descriptor = BluetoothGattDescriptor(descriptorUuid, BluetoothGattDescriptor.PERMISSION_READ)
-        characteristic.addDescriptor(descriptor)
+        characteristic.addDescriptor(configDescriptor)
 
         return characteristic
     }
@@ -21,13 +23,13 @@ class BtKeyboardGattServiceFactoryImpl : BtKeyboardGattServiceFactory {
                 BluetoothGattService.SERVICE_TYPE_PRIMARY)
 
         service.addCharacteristic(createCharacteristic(BtKeyboardServiceProfile.key1Characteristic,
-                BtKeyboardServiceProfile.key1Descriptor))
+                BtKeyboardServiceProfile.clientConfig))
         service.addCharacteristic(createCharacteristic(BtKeyboardServiceProfile.key2Characteristic,
-                BtKeyboardServiceProfile.key2Descriptor))
+                BtKeyboardServiceProfile.clientConfig))
         service.addCharacteristic(createCharacteristic(BtKeyboardServiceProfile.key3Characteristic,
-                BtKeyboardServiceProfile.key3Descriptor))
+                BtKeyboardServiceProfile.clientConfig))
         service.addCharacteristic(createCharacteristic(BtKeyboardServiceProfile.key4Characteristic,
-                BtKeyboardServiceProfile.key4Descriptor))
+                BtKeyboardServiceProfile.clientConfig))
 
         return service
     }
